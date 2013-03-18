@@ -113,6 +113,7 @@ public:
 	RagDoll (btDynamicsWorld* ownerWorld, const btVector3& positionOffset)
 		: m_ownerWorld (ownerWorld)
 	{
+		
 		// Setup the geometry
 		m_shapes[BODYPART_PELVIS] = new btCapsuleShape(btScalar(0.15), btScalar(0.20));
 		m_shapes[BODYPART_SPINE] = new btCapsuleShape(btScalar(0.15), btScalar(0.28));
@@ -376,9 +377,13 @@ void RagdollDemo::initPhysics()
 
 	// Spawn one ragdoll
 	btVector3 startOffset(1,0.5,0);
-	spawnRagdoll(startOffset);
+	//spawnRagdoll(startOffset);
 	startOffset.setValue(-1,0.5,0);
-	spawnRagdoll(startOffset);
+	//spawnRagdoll(startOffset);
+
+	CreateRobot();
+	//Robot robot = Robot(this);
+
 
 	clientResetScene();		
 }
@@ -391,6 +396,7 @@ void RagdollDemo::spawnRagdoll(const btVector3& startOffset)
 
 void RagdollDemo::clientMoveAndDisplay()
 {
+
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); 
 
 	//simple dynamics world doesn't handle fixed-time-stepping
@@ -400,15 +406,18 @@ void RagdollDemo::clientMoveAndDisplay()
 	if (ms > minFPS)
 		ms = minFPS;
 
-	if (m_dynamicsWorld)
-	{
-		m_dynamicsWorld->stepSimulation(ms / 1000000.f);
-		
-		//optional but useful: debug drawing
-		m_dynamicsWorld->debugDrawWorld();
+	
+		if (m_dynamicsWorld)
+		{
+			if(!pause){
+				m_dynamicsWorld->stepSimulation(ms / 1000000.f);
+			}
+			//optional but useful: debug drawing
+			m_dynamicsWorld->debugDrawWorld();
 
 
-	}
+		}
+	
 
 	renderme(); 
 
@@ -441,13 +450,20 @@ void RagdollDemo::keyboardCallback(unsigned char key, int x, int y)
 		spawnRagdoll(startOffset);
 		break;
 		}
+	case 'p':
+		{
+			if(!pause){
+				pause = true;
+			}else{
+				pause = false;
+			}
+		}
 	default:
 		DemoApplication::keyboardCallback(key, x, y);
 	}
 
 	
 }
-
 
 
 void	RagdollDemo::exitPhysics()
@@ -501,7 +517,51 @@ void	RagdollDemo::exitPhysics()
 	
 }
 
+/*
+	ASSIGNMENTS
+*/
+void RagdollDemo::CreateBox(int index, double x, double y, double z, double length, double width, double height){
+	geom[index] = new btBoxShape(btVector3(btScalar(length),btScalar(width),btScalar(height))); 
+	btTransform offset; 
+	offset.setIdentity(); 
+	offset.setOrigin(btVector3(btScalar(x),btScalar(y),btScalar(z))); 
+	body[index] = localCreateRigidBody(btScalar(1.0),offset,geom[index]); 
+}
+
+void RagdollDemo::CreateCylinder(int index,double x, double y, double z,double radius, double length, double eulerX, double eulerY, double eulerZ){
+	
+	//geom[index] = new btCylinderShape(btVector3(btScalar(radius),btScalar(length),btScalar(0)));
+
+	geom[index] = new btCapsuleShape(btScalar(radius),btScalar(length));
+	btTransform offset; 
+	offset.setIdentity(); 
+	offset.setOrigin(btVector3(btScalar(x),btScalar(y),btScalar(z)));
+
+	btTransform transform;
+	transform.setOrigin(btVector3(btScalar(0),btScalar(1),btScalar(0)));
+	transform.getBasis().setEulerZYX(eulerX,eulerY,eulerZ); 
+
+	body[index] = localCreateRigidBody(btScalar(1.0),offset*transform,geom[index]);
+}
+
+void RagdollDemo::CreateHinge(int jointIndex, int bodyAIndex, int bodyBIndex, const btVector3& axisInA, const btVector3& axisInB,
+		const btVector3& pivotInA, const btVector3& pivotInB){
+	
+	btHingeConstraint* tempHinge = new btHingeConstraint(*body[bodyAIndex], *body[bodyBIndex], pivotInA, pivotInB, axisInA, axisInB);
+}
+
+void RagdollDemo::CreateRobot(){
+	
+	//Create the body @ Index 0
+	CreateBox(0, 0,1.8, 0, 1, 0.2, 1);
+
+	//Create capulse @ index 1
+	CreateCylinder(1, -1.8, 0.8, 0, .2, 1.5, 0, 0, -M_PI_2);//Upper-Right
+	CreateCylinder(5, -2.6, 0, 0, .2, 1.5, 0, 0, 0);//Lower-Right
 
 
+	CreateCylinder(2, 1.8, 0.8, 0, .2, 1.5, 0, 0, M_PI_2); //Upper-Left
+	CreateCylinder(3, 0, 0.8, -1.8, .2, 1.5, -M_PI_2, 0, 0);//Upper-Front
+	CreateCylinder(4, 0, 0.8, 1.8, .2, 1.5, M_PI_2, 0, 0); //Upper-Back
 
-
+}

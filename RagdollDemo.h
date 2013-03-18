@@ -21,6 +21,8 @@ Written by: Marten Svanfeldt
 
 #include "GlutDemoApplication.h"
 #include "LinearMath/btAlignedObjectArray.h"
+//#include "Robot.h"
+
 class btBroadphaseInterface;
 class btCollisionShape;
 class btOverlappingPairCache;
@@ -70,6 +72,23 @@ public:
 		demo->initPhysics();
 		return demo;
 	}
+	
+	//Start Assignments
+	btRigidBody* body[9];
+	btCollisionShape* geom[9];
+	bool pause;
+	
+	void CreateBox(int index, double x, double y, double z, double length, double width, double height);
+	void CreateCylinder(int index,double x, double y, double z,double radius, double length, double eulerX, double eulerY, double eulerZ);
+	void CreateHinge(int jointIndex,
+		int bodyAIndex,
+		int bodyBIndex,
+		const btVector3& axisInA,
+		const btVector3& axisInB,
+		const btVector3& pivotInA,
+		const btVector3& pivotInB);
+	void CreateRobot();
+	
 	
 };
 
