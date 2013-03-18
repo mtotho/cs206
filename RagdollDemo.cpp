@@ -27,7 +27,7 @@ Written by: Marten Svanfeldt
 
 #include "GLDebugDrawer.h"
 #include "RagdollDemo.h"
-
+#include <iostream>
 
 // Enrico: Shouldn't these three variables be real constants and not defines?
 
@@ -374,6 +374,7 @@ void RagdollDemo::initPhysics()
 #endif //CREATE_GROUND_COLLISION_OBJECT
 
 	}
+	counter = 0;
 
 	// Spawn one ragdoll
 	btVector3 startOffset(1,0.5,0);
@@ -396,6 +397,8 @@ void RagdollDemo::spawnRagdoll(const btVector3& startOffset)
 
 void RagdollDemo::clientMoveAndDisplay()
 {
+	
+	//oneStep = false;
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); 
 
@@ -411,12 +414,40 @@ void RagdollDemo::clientMoveAndDisplay()
 		{
 			if(!pause){
 				m_dynamicsWorld->stepSimulation(ms / 1000000.f);
+			}else{
+				if(oneStep){
+					m_dynamicsWorld->stepSimulation((ms / 1000000.f)+1);
+					oneStep = false;
+				}
 			}
 			//optional but useful: debug drawing
 			m_dynamicsWorld->debugDrawWorld();
-
-
 		}
+
+
+		if (!pause || (pause && oneStep)) {
+			if(counter == 30){
+
+				ActuateJoint(0, M_PI_4, -M_PI_2, ms / 1000000.f);//Body-Right Leg
+				ActuateJoint(1, M_PI_4, M_PI_2, ms / 1000000.f);//Right Upper Leg-Right Lower Leg
+			
+				ActuateJoint(2, M_PI_4,-M_PI_2, ms / 1000000.f);//Body-LEft Leg
+				ActuateJoint(3, M_PI_4, M_PI_2, ms / 1000000.f);//Left Upper Leg - left lower leg
+				
+				ActuateJoint(4, M_PI_4, M_PI_2, ms / 1000000.f);//Body-Front leg
+				ActuateJoint(5, M_PI_4, -M_PI_2, ms / 1000000.f); //Front Upper leg - front lower leg
+				
+				ActuateJoint(6, M_PI_4, M_PI_2, ms / 1000000.f);//Body-Back leg
+				ActuateJoint(7, M_PI_4, -M_PI_2, ms / 1000000.f); //back upper leg and back lower leg
+				
+				m_dynamicsWorld->stepSimulation(ms / 1000000.f );
+
+				counter = 0;
+			}
+		oneStep = !oneStep;
+		counter++;
+		
+	}
 	
 
 	renderme(); 
@@ -457,6 +488,10 @@ void RagdollDemo::keyboardCallback(unsigned char key, int x, int y)
 			}else{
 				pause = false;
 			}
+		}
+	case 'k':
+		{
+			oneStep = !oneStep;
 		}
 	default:
 		DemoApplication::keyboardCallback(key, x, y);
@@ -547,7 +582,31 @@ void RagdollDemo::CreateCylinder(int index,double x, double y, double z,double r
 void RagdollDemo::CreateHinge(int jointIndex, int bodyAIndex, int bodyBIndex, const btVector3& axisInA, const btVector3& axisInB,
 		const btVector3& pivotInA, const btVector3& pivotInB){
 	
-	btHingeConstraint* tempHinge = new btHingeConstraint(*body[bodyAIndex], *body[bodyBIndex], pivotInA, pivotInB, axisInA, axisInB);
+	joints[jointIndex] = new btHingeConstraint(*body[bodyAIndex], *body[bodyBIndex], pivotInA, pivotInB, axisInA, axisInB);
+	//btHingeConstraint* tempHinge = new btHingeConstraint(*body[bodyAIndex], *body[bodyBIndex], pivotInA, pivotInB, axisInA, axisInB);
+	m_dynamicsWorld->addConstraint(joints[jointIndex], true);
+}
+
+btVector3 RagdollDemo::PointWorldToLocal(int index, btVector3& p)
+{
+	btTransform local1 = body[index]->getCenterOfMassTransform().inverse();
+	return local1*p;
+}
+
+btVector3 RagdollDemo::AxisWorldToLocal(int index, btVector3& a) {
+	btTransform local1 = body[index]->getCenterOfMassTransform().inverse();
+	btVector3 zero(0,0,0);
+	local1.setOrigin(zero);
+	return local1*a;
+}
+
+void RagdollDemo::ActuateJoint(int jointIndex, double desiredAngle, double jointOffset, double timeStep){
+	double current_angle = joints[jointIndex]->getHingeAngle() - jointOffset;//returns current angle in radians
+	double diff = desiredAngle - current_angle;
+	
+	std::cout << current_angle << std::endl;
+	joints[jointIndex]->enableAngularMotor(true, diff, 1);
+	//joints[jointIndex]->enableAngularMotor(true, diff, 1);
 }
 
 void RagdollDemo::CreateRobot(){
@@ -555,13 +614,43 @@ void RagdollDemo::CreateRobot(){
 	//Create the body @ Index 0
 	CreateBox(0, 0,1.8, 0, 1, 0.2, 1);
 
-	//Create capulse @ index 1
+	//Right legs
 	CreateCylinder(1, -1.8, 0.8, 0, .2, 1.5, 0, 0, -M_PI_2);//Upper-Right
+	CreateHinge(0, 0, 1, AxisWorldToLocal(0, btVector3(0,0,-1)), AxisWorldToLocal(1, btVector3(0,0,-1)), 
+		PointWorldToLocal(0, btVector3(-1, 1.8, 0)), PointWorldToLocal(1,btVector3(-1,1.8,0)));
 	CreateCylinder(5, -2.6, 0, 0, .2, 1.5, 0, 0, 0);//Lower-Right
+	CreateHinge(1, 1, 5, AxisWorldToLocal(1, btVector3(0,0,-1)), AxisWorldToLocal(5, btVector3(0,0,-1)), 
+		PointWorldToLocal(1, btVector3(-2.6, 1.8, 0)), PointWorldToLocal(5,btVector3(-2.6,1.8,0)));
+	joints[0]->setLimit(-M_PI_2 - M_PI_4, -M_PI_2 + M_PI_4);
+	joints[1]->setLimit(M_PI_2 - M_PI_4, M_PI_2 + M_PI_4);
 
-
+	//Left Legs
 	CreateCylinder(2, 1.8, 0.8, 0, .2, 1.5, 0, 0, M_PI_2); //Upper-Left
-	CreateCylinder(3, 0, 0.8, -1.8, .2, 1.5, -M_PI_2, 0, 0);//Upper-Front
-	CreateCylinder(4, 0, 0.8, 1.8, .2, 1.5, M_PI_2, 0, 0); //Upper-Back
+	CreateHinge(2, 0, 2, AxisWorldToLocal(0, btVector3(0,0,1)), AxisWorldToLocal(2, btVector3(0,0,1)), 
+		PointWorldToLocal(0, btVector3(1, 1.8, 0)), PointWorldToLocal(2,btVector3(1,1.8,0)));
+	CreateCylinder(6, 2.6, 0, 0, .2, 1.5, 0, 0, 0);//Lower-Left
+	CreateHinge(3, 2, 6, AxisWorldToLocal(2, btVector3(0,0,1)), AxisWorldToLocal(6, btVector3(0,0,1)), 
+		PointWorldToLocal(2, btVector3(2.6, 1.8, 0)), PointWorldToLocal(6,btVector3(2.6,1.8,0)));
+	joints[2]->setLimit(-M_PI_2 - M_PI_4, -M_PI_2 + M_PI_4);
+	joints[3]->setLimit(M_PI_2 - M_PI_4, M_PI_2 + M_PI_4);
 
+	//Front Legs
+	CreateCylinder(3, 0, 0.8, -1.8, .2, 1.5, -M_PI_2, 0, 0);//Upper-Front
+	CreateHinge(4, 0, 3, AxisWorldToLocal(0, btVector3(1,0,0)), AxisWorldToLocal(3, btVector3(1,0,0)), 
+		PointWorldToLocal(0, btVector3(0, 1.8, -1)), PointWorldToLocal(3,btVector3(0,1.8,-1)));
+	CreateCylinder(7, 0, 0, -2.6, .2, 1.5, 0, 0, 0);//Lower-Front
+	CreateHinge(5, 3, 7, AxisWorldToLocal(3, btVector3(1,0,0)), AxisWorldToLocal(7, btVector3(1,0,0)), 
+		PointWorldToLocal(3, btVector3(0, 1.8, -2.6)), PointWorldToLocal(7,btVector3(0,1.8,-2.6)));
+	joints[4]->setLimit(M_PI_2 - M_PI_4, M_PI_2 + M_PI_4);
+	joints[5]->setLimit(-M_PI_2 - M_PI_4, -M_PI_2 + M_PI_4);
+
+	//Back legs
+	CreateCylinder(4, 0, 0.8, 1.8, .2, 1.5, M_PI_2, 0, 0); //Upper-Back
+	CreateHinge(6, 0, 4, AxisWorldToLocal(0, btVector3(-1,0,0)), AxisWorldToLocal(4, btVector3(-1,0,0)), 
+		PointWorldToLocal(0, btVector3(0, 1.8, 1)), PointWorldToLocal(4,btVector3(0,1.8,1)));
+	CreateCylinder(8, 0, 0, 2.6, .2, 1.5, 0, 0, 0);//Lower-Back
+	CreateHinge(7, 4, 8, AxisWorldToLocal(4, btVector3(-1,0,0)), AxisWorldToLocal(8, btVector3(-1,0,0)), 
+		PointWorldToLocal(4, btVector3(0, 1.8, 2.6)), PointWorldToLocal(8,btVector3(0,1.8,2.6)));
+	joints[6]->setLimit(M_PI_2 - M_PI_4, M_PI_2 + M_PI_4);
+	joints[7]->setLimit(-M_PI_2 - M_PI_4, -M_PI_2 + M_PI_4);
 }

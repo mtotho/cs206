@@ -30,6 +30,7 @@ class btCollisionDispatcher;
 class btConstraintSolver;
 struct btCollisionAlgorithmCreateFunc;
 class btDefaultCollisionConfiguration;
+class btHingeConstraint;
 
 class RagdollDemo : public GlutDemoApplication
 {
@@ -76,7 +77,10 @@ public:
 	//Start Assignments
 	btRigidBody* body[9];
 	btCollisionShape* geom[9];
+	btHingeConstraint* joints[8];
 	bool pause;
+	bool oneStep;
+	int counter;
 	
 	void CreateBox(int index, double x, double y, double z, double length, double width, double height);
 	void CreateCylinder(int index,double x, double y, double z,double radius, double length, double eulerX, double eulerY, double eulerZ);
@@ -87,6 +91,10 @@ public:
 		const btVector3& axisInB,
 		const btVector3& pivotInA,
 		const btVector3& pivotInB);
+	btVector3 PointWorldToLocal(int bodyIndex, btVector3& point);
+	btVector3 AxisWorldToLocal(int index, btVector3& a);
+	void ActuateJoint(int jointIndex, double desiredAngle, double jointOffset, double timeStep);
+
 	void CreateRobot();
 	
 	
