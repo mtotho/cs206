@@ -18,7 +18,7 @@ Written by: Marten Svanfeldt
 
 #ifndef RAGDOLLDEMO_H
 #define RAGDOLLDEMO_H
-
+#include "GLDebugDrawer.h"
 #include "GlutDemoApplication.h"
 #include "LinearMath/btAlignedObjectArray.h"
 //#include "Robot.h"
@@ -49,6 +49,23 @@ class RagdollDemo : public GlutDemoApplication
 	btDefaultCollisionConfiguration* m_collisionConfiguration;
 
 public:
+	virtual void renderme() {
+		extern GLDebugDrawer gDebugDrawer;
+		// Call the parent method.
+		GlutDemoApplication::renderme();
+		// Make a circle with a 0.9 radius at (0,0,0)
+		// with RGB color (1,0,0).
+		//DebugDrawer.drawSphere(btVector3(0.,0.,0.),
+		//0.9, btVector3(1., 0., 0.));
+
+		for(int i = 0; i<10; i++){
+			if(touches[i] == 1){
+				//sleep(100);
+				gDebugDrawer.drawSphere(touchPoints[i], 0.4, btVector3(1., 0., 0.));
+
+			}
+		}
+	}
 	void initPhysics();
 
 	void exitPhysics();
@@ -80,8 +97,14 @@ public:
 	btHingeConstraint* joints[8];
 	bool pause;
 	bool oneStep;
+	int IDs[10];
+	int *touches;
+	btVector3 touchPoints[10];
 	int counter;
+	float minFPS;
 	
+	//bool myContactProcessedCallback(btManifoldPoint& cp, void* body0, void* body1);
+
 	void CreateBox(int index, double x, double y, double z, double length, double width, double height);
 	void CreateCylinder(int index,double x, double y, double z,double radius, double length, double eulerX, double eulerY, double eulerZ);
 	void CreateHinge(int jointIndex,
@@ -94,6 +117,7 @@ public:
 	btVector3 PointWorldToLocal(int bodyIndex, btVector3& point);
 	btVector3 AxisWorldToLocal(int index, btVector3& a);
 	void ActuateJoint(int jointIndex, double desiredAngle, double jointOffset, double timeStep);
+	//void setUserPointer(void *data);
 
 	void CreateRobot();
 	

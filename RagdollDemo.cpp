@@ -328,11 +328,46 @@ public:
 };
 
 
+static RagdollDemo* ragdollDemo;
 
+bool myContactProcessedCallback(btManifoldPoint& cp, void* body0, void* body1)
+{
+	int *ID1, *ID2;
+	btCollisionObject* o1 = static_cast<btCollisionObject*>(body0);
+	btCollisionObject* o2 = static_cast<btCollisionObject*>(body1);
+	int groundID = 9;
+	ID1 = static_cast<int*>(o1->getUserPointer());
+	ID2 = static_cast<int*>(o2->getUserPointer());
+	
+	ragdollDemo->touches[*ID1] = 1;
+	ragdollDemo->touches[*ID2] = 1;
+	ragdollDemo->touchPoints[*ID1] = cp.m_positionWorldOnB;
+	ragdollDemo->touchPoints[*ID2] = cp.m_positionWorldOnB;
+
+	//printf("ID1 = %d, ID2 = %d\n", *ID1, *ID2);
+	//printf("ID1 = %d, ID2 = %d\n", *ID1, *ID2);
+	return false;
+}
 
 void RagdollDemo::initPhysics()
 {
+
+	minFPS = 100000.f/60.f;
 	// Setup the basic world
+	gContactProcessedCallback = myContactProcessedCallback;
+
+	ragdollDemo = this;
+
+	IDs[9] = 9;
+	for(int i = 0; i<9;i++){
+		IDs[i] = i;
+	}
+
+	ragdollDemo->touches = new int[10];
+	for(int i = 0; i<=10;i++){
+		touches[i] = 0;
+		//printf("Touch%d = %d\n", i, touch[i]);
+	}
 
 	setTexturing(true);
 	setShadows(true);
@@ -369,6 +404,7 @@ void RagdollDemo::initPhysics()
 		fixedGround->setCollisionShape(groundShape);
 		fixedGround->setWorldTransform(groundTransform);
 		m_dynamicsWorld->addCollisionObject(fixedGround);
+		fixedGround->setUserPointer(&IDs[9]);
 #else
 		localCreateRigidBody(btScalar(0.),groundTransform,groundShape);
 #endif //CREATE_GROUND_COLLISION_OBJECT
@@ -397,7 +433,10 @@ void RagdollDemo::spawnRagdoll(const btVector3& startOffset)
 
 void RagdollDemo::clientMoveAndDisplay()
 {
-	
+
+	for(int i = 0; i <10;i++){
+		touches[i] = 0;
+	}
 	//oneStep = false;
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); 
@@ -405,7 +444,7 @@ void RagdollDemo::clientMoveAndDisplay()
 	//simple dynamics world doesn't handle fixed-time-stepping
 	float ms = getDeltaTimeMicroseconds();
 
-	float minFPS = 1000000.f/60.f;
+	//float minFPS = 1000000.f/60.f;
 	if (ms > minFPS)
 		ms = minFPS;
 
@@ -413,10 +452,10 @@ void RagdollDemo::clientMoveAndDisplay()
 		if (m_dynamicsWorld)
 		{
 			if(!pause){
-				m_dynamicsWorld->stepSimulation(ms / 1000000.f);
+				m_dynamicsWorld->stepSimulation(ms / minFPS);
 			}else{
 				if(oneStep){
-					m_dynamicsWorld->stepSimulation((ms / 1000000.f)+1);
+					m_dynamicsWorld->stepSimulation((ms / minFPS)+1);
 					oneStep = false;
 				}
 			}
@@ -424,31 +463,44 @@ void RagdollDemo::clientMoveAndDisplay()
 			m_dynamicsWorld->debugDrawWorld();
 		}
 
+	
 
 		if (!pause || (pause && oneStep)) {
-			if(counter == 30){
+			if(counter == 100){
 
-				ActuateJoint(0, M_PI_4, -M_PI_2, ms / 1000000.f);//Body-Right Leg
-				ActuateJoint(1, M_PI_4, M_PI_2, ms / 1000000.f);//Right Upper Leg-Right Lower Leg
+	
+				float angle1 = 0;//(rand()/double(RAND_MAX))*90-45;
+				float angle2 = 0; //(rand()/double(RAND_MAX))*90-45;
+				float angle3 = 0;//(rand()/double(RAND_MAX))*90-45;
+				float angle4 = 0;//(rand()/double(RAND_MAX))*90-45;
+				float angle5 = 0;//(rand()/double(RAND_MAX))*90-45;
+				float angle6 = 0;//(rand()/double(RAND_MAX))*90-45;
+				float angle7 = 0;//(rand()/double(RAND_MAX))*90-45;
+				float angle8 = 0;//(rand()/double(RAND_MAX))*90-45;
 			
-				ActuateJoint(2, M_PI_4,-M_PI_2, ms / 1000000.f);//Body-LEft Leg
-				ActuateJoint(3, M_PI_4, M_PI_2, ms / 1000000.f);//Left Upper Leg - left lower leg
+				ActuateJoint(0, angle1, -M_PI_2, ms / 1000000.f);//Body-Right Leg
+				ActuateJoint(1, angle2, M_PI_2, ms / 1000000.f);//Right Upper Leg-Right Lower Leg
+			 
+				ActuateJoint(2, angle3,-M_PI_2, ms / 1000000.f);//Body-LEft Leg
+				ActuateJoint(3, angle4, M_PI_2, ms / 1000000.f);//Left Upper Leg - left lower leg
 				
-				ActuateJoint(4, M_PI_4, M_PI_2, ms / 1000000.f);//Body-Front leg
-				ActuateJoint(5, M_PI_4, -M_PI_2, ms / 1000000.f); //Front Upper leg - front lower leg
+				ActuateJoint(4, angle5, M_PI_2, ms / 1000000.f);//Body-Front leg
+				ActuateJoint(5, angle6, -M_PI_2, ms / 1000000.f); //Front Upper leg - front lower leg
 				
-				ActuateJoint(6, M_PI_4, M_PI_2, ms / 1000000.f);//Body-Back leg
-				ActuateJoint(7, M_PI_4, -M_PI_2, ms / 1000000.f); //back upper leg and back lower leg
+				ActuateJoint(6, angle7, M_PI_2, ms / 1000000.f);//Body-Back leg
+				ActuateJoint(7, angle8, -M_PI_2, ms / 1000000.f); //back upper leg and back lower leg
 				
-				m_dynamicsWorld->stepSimulation(ms / 1000000.f );
+				m_dynamicsWorld->stepSimulation(ms / minFPS );
 
+				printf("%d%d%d%d%d%d%d%d%d%d\n",touches[0],touches[1],touches[2],touches[3],touches[4],touches[5],touches[6],touches[7],touches[8],touches[9]);
 				counter = 0;
 			}
 		oneStep = !oneStep;
 		counter++;
-		
+			
 	}
-	
+		
+
 
 	renderme(); 
 
@@ -561,6 +613,8 @@ void RagdollDemo::CreateBox(int index, double x, double y, double z, double leng
 	offset.setIdentity(); 
 	offset.setOrigin(btVector3(btScalar(x),btScalar(y),btScalar(z))); 
 	body[index] = localCreateRigidBody(btScalar(1.0),offset,geom[index]); 
+
+	body[index]->setUserPointer(&IDs[index]);
 }
 
 void RagdollDemo::CreateCylinder(int index,double x, double y, double z,double radius, double length, double eulerX, double eulerY, double eulerZ){
@@ -577,6 +631,7 @@ void RagdollDemo::CreateCylinder(int index,double x, double y, double z,double r
 	transform.getBasis().setEulerZYX(eulerX,eulerY,eulerZ); 
 
 	body[index] = localCreateRigidBody(btScalar(1.0),offset*transform,geom[index]);
+	body[index]->setUserPointer(&IDs[index]);
 }
 
 void RagdollDemo::CreateHinge(int jointIndex, int bodyAIndex, int bodyBIndex, const btVector3& axisInA, const btVector3& axisInB,
@@ -604,7 +659,7 @@ void RagdollDemo::ActuateJoint(int jointIndex, double desiredAngle, double joint
 	double current_angle = joints[jointIndex]->getHingeAngle() - jointOffset;//returns current angle in radians
 	double diff = desiredAngle - current_angle;
 	
-	std::cout << current_angle << std::endl;
+	//std::cout << current_angle << std::endl;
 	joints[jointIndex]->enableAngularMotor(true, diff, 1);
 	//joints[jointIndex]->enableAngularMotor(true, diff, 1);
 }
