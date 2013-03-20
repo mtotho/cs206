@@ -99,6 +99,7 @@ public:
 	bool oneStep;
 	int IDs[10];
 	int *touches;
+	double weights[4][8];
 	btVector3 touchPoints[10];
 	int counter;
 	float minFPS;
@@ -118,7 +119,7 @@ public:
 	btVector3 AxisWorldToLocal(int index, btVector3& a);
 	void ActuateJoint(int jointIndex, double desiredAngle, double jointOffset, double timeStep);
 	//void setUserPointer(void *data);
-
+	float RandFloat(float min, float max);
 	void CreateRobot();
 	
 	
