@@ -351,7 +351,7 @@ bool myContactProcessedCallback(btManifoldPoint& cp, void* body0, void* body1)
 
 void RagdollDemo::initPhysics()
 {
-	//set each value in weights to a random float value in the range of -1 to 1
+	//set each value in weights to a random float value in the range of -1 to 1 (ASSIGNMENT 9)
 	for(int i=0; i<8; i++){
 		for(int j=0; j<4; j++){
 			weights[j][i] = RandFloat(-1,1);
@@ -450,7 +450,7 @@ void RagdollDemo::clientMoveAndDisplay()
 	//simple dynamics world doesn't handle fixed-time-stepping
 	float ms = getDeltaTimeMicroseconds();
 
-	float minFPS = 1000000.f/60.f;
+	float minFPS = 100000.f/60.f;
 	if (ms > minFPS)
 		ms = minFPS;
 
@@ -469,19 +469,21 @@ void RagdollDemo::clientMoveAndDisplay()
 			m_dynamicsWorld->debugDrawWorld();
 		}
 
-	
 
+		//ASSIGNMENT 9 Stuff below
 		if (!pause || (pause && oneStep)) {
 			m_dynamicsWorld->stepSimulation(ms / minFPS );
-			if(counter == 100){
+			if(counter == 40){
 
 				for(int i=0; i<8; i++){
 
 					double motorCommand = 0.0;
 
 					for(int j=0; j<4; j++){
-						motorCommand = motorCommand + touches[(i+1)]*weights[j][i];
-						//std::cout << weights[j][i] << std::endl;
+
+						//Did j+5 because my 4 feet touch sensors start at the 5th index. May change depending on your configuration
+						motorCommand = motorCommand + touches[(j+5)]*weights[j][i];
+						//std::cout << touches[(j+5)] << std::endl;
 					}
 					
 					//Keep motorcommand between -1 and 1
@@ -489,13 +491,14 @@ void RagdollDemo::clientMoveAndDisplay()
 
 					//Expand it to be between -45 and 45
 					motorCommand = motorCommand*M_PI_4;
+
 					//motorCommand = M_PI_4;
-					std::cout << motorCommand << std::endl;
+					//std::cout << motorCommand << std::endl;
 
 					ActuateJoint(i, motorCommand, 0, ms / minFPS);
 				}
 
-				//printf("%d%d%d%d%d%d%d%d%d%d\n",touches[0],touches[1],touches[2],touches[3],touches[4],touches[5],touches[6],touches[7],touches[8],touches[9]);
+				printf("%d%d%d%d\n",touches[5],touches[6],touches[7],touches[8]);
 				counter = 0;
 			}
 		oneStep = !oneStep;
@@ -697,22 +700,23 @@ void RagdollDemo::ActuateJoint(int jointIndex, double desiredAngle, double joint
 			   }
 	}
 
-	double maxForce = 60;
+	double maxForce = 200;
 	//double current_angle = joints[jointIndex]->getHingeAngle() - jointOffset;//returns current angle in radian
 
-	/*
+	
 	double current_angle = joints[jointIndex]->getHingeAngle() - jointOffset;//returns current angle in radians
 	double diff = desiredAngle - current_angle;
 
-	std::cout << diff << std::endl;
+	//std::cout << diff << std::endl;
 
 	//std::cout << jointOffset << std::endl;
-	joints[jointIndex]->enableAngularMotor(true, maxForce*diff, 1);
-	*/
-
+	joints[jointIndex]->enableAngularMotor(true, 2*diff, maxForce);
+	
+	/* Commented out below is essentially 'actuate joint 1'
 	joints[jointIndex]->enableMotor(TRUE);
 	joints[jointIndex]->setMaxMotorImpulse(maxForce);
 	joints[jointIndex]->setMotorTarget(desiredAngle + jointOffset, 1);
+	*/
 	//joints[jointIndex]->enableAngularMotor(true, diff, 1);
 }
 
@@ -730,9 +734,9 @@ void RagdollDemo::CreateRobot(){
 	CreateCylinder(1, -1.8, 0.8, 0, .2, 1.5, 0, 0, -M_PI_2);//Upper-Right
 	CreateHinge(0, 0, 1, AxisWorldToLocal(0, btVector3(0,0,-1)), AxisWorldToLocal(1, btVector3(0,0,-1)), 
 		PointWorldToLocal(0, btVector3(-1, 1.8, 0)), PointWorldToLocal(1,btVector3(-1,1.8,0)));
-	CreateCylinder(2, -2.6, 0, 0, .2, 1.5, 0, 0, 0);//Lower-Right
-	CreateHinge(1, 1, 2, AxisWorldToLocal(1, btVector3(0,0,-1)), AxisWorldToLocal(2, btVector3(0,0,-1)), 
-		PointWorldToLocal(1, btVector3(-2.6, 1.8, 0)), PointWorldToLocal(2,btVector3(-2.6,1.8,0)));
+	CreateCylinder(5, -2.6, 0, 0, .2, 1.5, 0, 0, 0);//Lower-Right
+	CreateHinge(1, 1, 5, AxisWorldToLocal(1, btVector3(0,0,-1)), AxisWorldToLocal(5, btVector3(0,0,-1)), 
+		PointWorldToLocal(1, btVector3(-2.6, 1.8, 0)), PointWorldToLocal(5,btVector3(-2.6,1.8,0)));
 	joints[0]->setLimit(-M_PI_2 - M_PI_4, -M_PI_2 + M_PI_4);
 	joints[1]->setLimit(M_PI_2 - M_PI_4, M_PI_2 + M_PI_4);
 
@@ -740,9 +744,9 @@ void RagdollDemo::CreateRobot(){
 	CreateCylinder(3, 1.8, 0.8, 0, .2, 1.5, 0, 0, M_PI_2); //Upper-Left
 	CreateHinge(2, 0, 3, AxisWorldToLocal(0, btVector3(0,0,1)), AxisWorldToLocal(3, btVector3(0,0,1)), 
 		PointWorldToLocal(0, btVector3(1, 1.8, 0)), PointWorldToLocal(3,btVector3(1,1.8,0)));
-	CreateCylinder(4, 2.6, 0, 0, .2, 1.5, 0, 0, 0);//Lower-Left
-	CreateHinge(3, 3, 4, AxisWorldToLocal(3, btVector3(0,0,1)), AxisWorldToLocal(4, btVector3(0,0,1)), 
-		PointWorldToLocal(3, btVector3(2.6, 1.8, 0)), PointWorldToLocal(4,btVector3(2.6,1.8,0)));
+	CreateCylinder(6, 2.6, 0, 0, .2, 1.5, 0, 0, 0);//Lower-Left
+	CreateHinge(3, 3, 6, AxisWorldToLocal(3, btVector3(0,0,1)), AxisWorldToLocal(6, btVector3(0,0,1)), 
+		PointWorldToLocal(3, btVector3(2.6, 1.8, 0)), PointWorldToLocal(6,btVector3(2.6,1.8,0)));
 	joints[2]->setLimit(-M_PI_2 - M_PI_4, -M_PI_2 + M_PI_4);
 	joints[3]->setLimit(M_PI_2 - M_PI_4, M_PI_2 + M_PI_4);
 
@@ -750,9 +754,9 @@ void RagdollDemo::CreateRobot(){
 	CreateCylinder(5, 0, 0.8, -1.8, .2, 1.5, -M_PI_2, 0, 0);//Upper-Front
 	CreateHinge(4, 0, 5, AxisWorldToLocal(0, btVector3(1,0,0)), AxisWorldToLocal(5, btVector3(1,0,0)), 
 		PointWorldToLocal(0, btVector3(0, 1.8, -1)), PointWorldToLocal(5,btVector3(0,1.8,-1)));
-	CreateCylinder(6, 0, 0, -2.6, .2, 1.5, 0, 0, 0);//Lower-Front
-	CreateHinge(5, 5, 6, AxisWorldToLocal(5, btVector3(1,0,0)), AxisWorldToLocal(6, btVector3(1,0,0)), 
-		PointWorldToLocal(5, btVector3(0, 1.8, -2.6)), PointWorldToLocal(6,btVector3(0,1.8,-2.6)));
+	CreateCylinder(7, 0, 0, -2.6, .2, 1.5, 0, 0, 0);//Lower-Front
+	CreateHinge(5, 5, 7, AxisWorldToLocal(5, btVector3(1,0,0)), AxisWorldToLocal(7, btVector3(1,0,0)), 
+		PointWorldToLocal(5, btVector3(0, 1.8, -2.6)), PointWorldToLocal(7,btVector3(0,1.8,-2.6)));
 	joints[4]->setLimit(M_PI_2 - M_PI_4, M_PI_2 + M_PI_4);
 	joints[5]->setLimit(-M_PI_2 - M_PI_4, -M_PI_2 + M_PI_4);
 
