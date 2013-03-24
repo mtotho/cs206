@@ -28,6 +28,8 @@ Written by: Marten Svanfeldt
 #include "GLDebugDrawer.h"
 #include "RagdollDemo.h"
 #include <iostream>
+#include <time.h>
+
 
 // Enrico: Shouldn't these three variables be real constants and not defines?
 
@@ -351,6 +353,7 @@ bool myContactProcessedCallback(btManifoldPoint& cp, void* body0, void* body1)
 
 void RagdollDemo::initPhysics()
 {
+	srand(time(NULL));
 	//set each value in weights to a random float value in the range of -1 to 1 (ASSIGNMENT 9)
 	for(int i=0; i<8; i++){
 		for(int j=0; j<4; j++){
@@ -359,7 +362,7 @@ void RagdollDemo::initPhysics()
 		}
 	}
 
-	minFPS = 100000.f/60.f;
+	minFPS = 1000000.f/60.f;
 	// Setup the basic world
 	gContactProcessedCallback = myContactProcessedCallback;
 
@@ -450,10 +453,9 @@ void RagdollDemo::clientMoveAndDisplay()
 	//simple dynamics world doesn't handle fixed-time-stepping
 	float ms = getDeltaTimeMicroseconds();
 
-	float minFPS = 100000.f/60.f;
+	//float minFPS = 100000.f/60.f;
 	if (ms > minFPS)
 		ms = minFPS;
-
 	
 		if (m_dynamicsWorld)
 		{
@@ -472,8 +474,10 @@ void RagdollDemo::clientMoveAndDisplay()
 
 		//ASSIGNMENT 9 Stuff below
 		if (!pause || (pause && oneStep)) {
-			m_dynamicsWorld->stepSimulation(ms / minFPS );
-			if(counter == 40){
+			m_dynamicsWorld->stepSimulation(ms / 1000000.f );
+			
+			
+			if(counter==50){
 
 				for(int i=0; i<8; i++){
 
@@ -492,22 +496,25 @@ void RagdollDemo::clientMoveAndDisplay()
 					//Expand it to be between -45 and 45
 					motorCommand = motorCommand*M_PI_4;
 
-					//motorCommand = M_PI_4;
-					//std::cout << motorCommand << std::endl;
+					//motorCommand = 0;
+					std::cout << motorCommand << std::endl;
 
 					ActuateJoint(i, motorCommand, 0, ms / minFPS);
+					//m_dynamicsWorld->stepSimulation(ms / 1000000.f );
 				}
 
-				printf("%d%d%d%d\n",touches[5],touches[6],touches[7],touches[8]);
+				//printf("%d%d%d%d\n",touches[5],touches[6],touches[7],touches[8]);
 				counter = 0;
 			}
 		oneStep = !oneStep;
 		counter++;
 			
+			
 	}
+
 		
 
-
+		
 	renderme(); 
 
 	glFlush();
@@ -615,6 +622,8 @@ void	RagdollDemo::exitPhysics()
 /*
 	ASSIGNMENTS
 */
+
+
 void RagdollDemo::CreateBox(int index, double x, double y, double z, double length, double width, double height){
 	geom[index] = new btBoxShape(btVector3(btScalar(length),btScalar(width),btScalar(height))); 
 	btTransform offset; 
@@ -699,25 +708,22 @@ void RagdollDemo::ActuateJoint(int jointIndex, double desiredAngle, double joint
 			break;
 			   }
 	}
-
-	double maxForce = 200;
-	//double current_angle = joints[jointIndex]->getHingeAngle() - jointOffset;//returns current angle in radian
-
+	double maxForce = 5;
 	
+	/*
 	double current_angle = joints[jointIndex]->getHingeAngle() - jointOffset;//returns current angle in radians
 	double diff = desiredAngle - current_angle;
 
-	//std::cout << diff << std::endl;
+	std::cout << diff << std::endl;
 
-	//std::cout << jointOffset << std::endl;
-	joints[jointIndex]->enableAngularMotor(true, 2*diff, maxForce);
-	
-	/* Commented out below is essentially 'actuate joint 1'
+	joints[jointIndex]->enableAngularMotor(true, 1*diff, maxForce);
+	*/
+	//Commented out below is essentially 'actuate joint 1'
 	joints[jointIndex]->enableMotor(TRUE);
 	joints[jointIndex]->setMaxMotorImpulse(maxForce);
 	joints[jointIndex]->setMotorTarget(desiredAngle + jointOffset, 1);
-	*/
-	//joints[jointIndex]->enableAngularMotor(true, diff, 1);
+	
+
 }
 
 float RagdollDemo::RandFloat(float min, float max){

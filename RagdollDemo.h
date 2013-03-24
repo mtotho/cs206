@@ -121,6 +121,7 @@ public:
 	//void setUserPointer(void *data);
 	float RandFloat(float min, float max);
 	void CreateRobot();
+
 	
 	
 };
